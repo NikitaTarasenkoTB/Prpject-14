@@ -10,13 +10,13 @@ const userSchema = new mongoose.Schema({
     validate: {
       validator: (validateEmail) => validator.isEmail(validateEmail),
       message: (wrongEmail) => `${wrongEmail} не верно введен email`,
-    }
+    },
   },
   password: {
     type: String,
     required: true,
     minLength: 8,
-    select: false
+    select: false,
   },
   name: {
     type: String,
@@ -40,17 +40,15 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-userSchema.statics.findUserByCredentials = function(email, password) {
+userSchema.statics.findUserByCredentials = function (email, password) {
   return this.findOne({ email }).select('+password')
     .then((user) => {
-      if(!user) {
-        return Promise.reject(new Error('Неправильные почта или пароль'))
+      if (!user) {
+        return Promise.reject(new Error('Неправильные почта или пароль'));
       }
       return bcrypt.compare(password, user.password)
-        .then((isMatched) => {
-          return !isMatched ? Promise.reject(new Error('Неправильные почта или пароль')) : user;
-        })
-    })
+        .then((isMatched) => (!isMatched ? Promise.reject(new Error('Неправильные почта или пароль')) : user));
+    });
 };
 
 module.exports = mongoose.model('user', userSchema);

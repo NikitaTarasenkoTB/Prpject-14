@@ -16,7 +16,7 @@ function postCard(request, response) {
 function deleteCard(request, response) {
   Card.findByIdAndRemove(request.params.cardId)
     .then((cardData) => {
-      if(cardData) {
+      if (cardData) {
         String(request.user._id) === String(cardData.owner) ? response.send({ data: cardData }) : response.status(401).send({ message: 'Нет прав' });
       } else {
         response.status(404).send({ message: 'Карточка не найдена' });

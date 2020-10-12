@@ -19,12 +19,15 @@ function getUser(request, response) {
 }
 
 function postUser(request, response) {
-  const { email, password, name, about, avatar } = request.body;
+  const {
+    email, password, name, about, avatar,
+  } = request.body;
   bcrypt.hash(password, 10)
-    .then((passwordHash) => User.create({ email, password: passwordHash, name, about, avatar })
+    .then((passwordHash) => User.create({
+      email, password: passwordHash, name, about, avatar,
+    })
       .then((newUserData) => response.send({ data: newUserData }))
-      .catch((error) => response.status(400).send({ message: error.message }))
-    )
+      .catch((error) => response.status(400).send({ message: error.message })));
 }
 
 function updateProfileName(request, response) {
@@ -64,7 +67,7 @@ function login(request, response) {
       const token = jwt.sign(
         { _id: user._id },
         secretKey,
-        { expiresIn: '7d' }
+        { expiresIn: '7d' },
       );
       response.send({ token });
     })
