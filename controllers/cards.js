@@ -14,10 +14,16 @@ function postCard(request, response) {
 }
 
 function deleteCard(request, response) {
-  Card.findByIdAndRemove(request.params.cardId)
+  Card.findById(request.params.cardId)
     .then((cardData) => {
       if (cardData) {
-        String(request.user._id) === String(cardData.owner) ? response.send({ data: cardData }) : response.status(401).send({ message: 'Нет прав' });
+        if (String(request.user._id) === String(cardData.owner)) {
+          Card.findByIdAndRemove(request.params.cardId)
+            .then((card) => response.send({ data: card }))
+            .catch((error) => response.status(500).send({ message: error.message }));
+        } else {
+          response.status(403).send({ message: 'Нет прав' });
+        }
       } else {
         response.status(404).send({ message: 'Карточка не найдена' });
       }
@@ -37,7 +43,15 @@ function addLike(request, response) {
     .then((newLikeData) => {
       newLikeData ? response.send({ message: newLikeData }) : response.status(404).send({ message: 'Карточка не найдена' });
     })
-    .catch(() => response.status(500).send({ message: 'На сервере произошла ошибка' }));
+    .catch((error) => {
+      let message = 'Ошибка сервера';
+      let status = 500;
+      if (error.name === 'CastError') {
+        message = 'Введены некорректные данные';
+        status = 400;
+      }
+      response.status(status).send({ message });
+    });
 }
 
 function removeLike(request, response) {
@@ -52,7 +66,15 @@ function removeLike(request, response) {
     .then((newLikeData) => {
       newLikeData ? response.send({ message: newLikeData }) : response.status(404).send({ message: 'Карточка не найдена' });
     })
-    .catch(() => response.status(500).send({ message: 'На сервере произошла ошибка' }));
+    .catch((error) => {
+      let message = 'Ошибка сервера';
+      let status = 500;
+      if (error.name === 'CastError') {
+        message = 'Введены некорректные данные';
+        status = 400;
+      }
+      response.status(status).send({ message });
+    });
 }
 
 module.exports = {

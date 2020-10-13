@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-const secretKey = '420a1d5c32303bc96677d77d89567a75802b9843b86009274b46b592943fd940';
+const { JWT_SECRET = 'dev-key' } = process.env;
 
 function getUsers(request, response) {
   User.find({})
@@ -15,19 +15,41 @@ function getUser(request, response) {
     .then((userData) => {
       userData ? response.send({ data: userData }) : response.status(404).send({ message: 'Такого пользователя нет' });
     })
-    .catch(() => response.status(404).send({ message: 'Такого пользователя нет' }));
+    .catch((error) => {
+      let message = 'Ошибка сервера';
+      let status = 500;
+      if (error.name === 'CastError') {
+        message = 'Введены некорректные данные';
+        status = 400;
+      }
+      response.status(status).send({ message });
+    });
 }
 
-function postUser(request, response) {
+function postUser(request, response) { // eslint-disable-line consistent-return
   const {
     email, password, name, about, avatar,
   } = request.body;
+  if (!password.trim() || password.trim().length < 8) {
+    return response.status(400).send({ message: 'Некорректный пароль' });
+  }
   bcrypt.hash(password, 10)
     .then((passwordHash) => User.create({
       email, password: passwordHash, name, about, avatar,
     })
-      .then((newUserData) => response.send({ data: newUserData }))
-      .catch((error) => response.status(400).send({ message: error.message })));
+      .then((newUserData) => {
+        newUserData.password = undefined; // eslint-disable-line no-param-reassign
+        response.send({ data: newUserData });
+      })
+      .catch((error) => {
+        let { message } = error;
+        let status = 400;
+        if (error.code === 11000) {
+          message = 'Почта уже зрагестрирована';
+          status = 409;
+        }
+        response.status(status).send({ message });
+      }));
 }
 
 function updateProfileName(request, response) {
@@ -66,10 +88,11 @@ function login(request, response) {
     .then((user) => {
       const token = jwt.sign(
         { _id: user._id },
-        secretKey,
+        JWT_SECRET,
         { expiresIn: '7d' },
       );
-      response.send({ token });
+      response.cookie('jwt', token, { maxAge: 3600000 * 24 * 7, httpOnly: true, sameSite: true });
+      response.status(200).send({ message: 'Добро пожаловать!' });
     })
     .catch((error) => response.status(401).send({ message: error.message }));
 }
