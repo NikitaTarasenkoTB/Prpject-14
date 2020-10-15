@@ -28,7 +28,15 @@ function deleteCard(request, response) {
         response.status(404).send({ message: 'Карточка не найдена' });
       }
     })
-    .catch(() => response.status(404).send({ message: 'Карточка не найдена' }));
+    .catch((error) => {
+      let message = 'Ошибка сервера';
+      let status = 500;
+      if (error.name === 'CastError') {
+        message = 'Введены некорректные данные';
+        status = 400;
+      }
+      response.status(status).send({ message });
+    });
 }
 
 function addLike(request, response) {
